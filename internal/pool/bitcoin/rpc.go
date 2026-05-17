@@ -48,16 +48,16 @@ type RPCClient struct {
 // "params":[]
 // }
 type rpcRequest struct {
-	JSON-RPC protocol version
+	// JSON-RPC protocol version
 	Jsonrpc string        `json:"jsonrpc"`
 	// Arbitrary request ID used to correlate response
 	ID      string        `json:"id"`
-// RPC method name
-//
-// Examples:
-// getblocktemplate
-// submitblock
-// getblockchaininfo
+	// RPC method name
+	//
+	// Examples:
+	// getblocktemplate
+	// submitblock
+	// getblockchaininfo
 	Method  string        `json:"method"`
 	// Parameters sent to the RPC method
 	Params  []interface{} `json:"params"`
@@ -134,7 +134,7 @@ func (r *RPCClient) call(method string, params []interface{}, result interface{}
 		return err
 	}
 
-	Creates an HTTP POST request.
+	// Creates an HTTP POST request.
 	req, err := http.NewRequest("POST", r.URL, bytes.NewBuffer(b))
 	if err != nil {
 		return err
