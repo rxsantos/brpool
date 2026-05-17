@@ -71,32 +71,101 @@ func ValidateShare(
 	// CRITICAL FIX REQUIRED: Hardcoded extraNonce1. This must be dynamically tracked per connected Miner session.
 	extraNonce1 := "00000001"
 
-	// Rebuild the customized coinbase transaction using the miner's submitted extraNonce2
-	// coinbase, err := jobs.BuildCoinbase(
+	// // Rebuild the customized coinbase transaction using the miner's submitted extraNonce2
+	// // coinbase, err := jobs.BuildCoinbase(
+	// coinbase, err := jobs.BuildCoinbaseTx(
+	// 	job.BlockTemplate,
+	// 	extraNonce1,
+	// 	extraNonce2,
+	// )
+	// if err != nil {
+	// 	return err
+	// }
+
+	// // coinbaseHash := doubleSHA(coinbase)
+	// coinbaseHash := jobs.CoinbaseTxID(
+	// 	coinbase,
+	// )
+
+	// // Recalculate the Merkle Root with the new coinbase hash injected as the first leaf
+	// merkleRoot, err := jobs.BuildMerkleRoot(
+	// 	coinbaseHash,
+	// 	job.BlockTemplate,
+	// )
+	// if err != nil {
+	// 	return err
+	// }
+
+// =========================================================================
+	// STEP 1: SEG WIT DOUBLE-PASS PIPELINE
+	// =========================================================================
+
+	// 1.1 Create a dummy commitment placeholder (32 bytes of zeros) to break the dependency loop
+	dummyCommitment := make([]byte, 32)
+
+	// 1.2 Build an interim template Coinbase transaction to measure structural byte sizes
+	coinbaseTemplate, err := jobs.BuildCoinbaseTx(
+		job.BlockTemplate,
+		extraNonce1,
+		extraNonce2,
+		dummyCommitment,
+	)
+	if err != nil {
+		return err
+	}
+
+	// 1.3 Extract the modern Witness Transaction ID (wtxid)
+	coinbaseWTxID := jobs.CoinbaseWTxID(coinbaseTemplate)
+
+	// 1.4 Construct the parallel Witness Merkle Tree mapping signatures from the mempool
+	witnessMerkleRoot, err := jobs.BuildWitnessMerkleRoot(
+		coinbaseWTxID,
+		job.BlockTemplate,
+	)
+	if err != nil {
+		return err
+	}
+
+	// 1.5 Calculate the final standard 32-byte Witness Commitment token
+	witnessCommitment := jobs.BuildWitnessCommitment(witnessMerkleRoot)
+
+	// 1.6 Overwrite and generate the DEFINITIVE Coinbase transaction embedded with the real commitment
 	coinbase, err := jobs.BuildCoinbaseTx(
 		job.BlockTemplate,
 		extraNonce1,
 		extraNonce2,
+		witnessCommitment,
 	)
 	if err != nil {
 		return err
 	}
 
-	// coinbaseHash := doubleSHA(coinbase)
-	coinbaseHash := jobs.CoinbaseTxID(
-		coinbase,
-	)
+	// =========================================================================
+	// STEP 2: LEGACY MERKLE ROOT GENERATION
+	// =========================================================================
 
-	// Recalculate the Merkle Root with the new coinbase hash injected as the first leaf
+	// 2.1 Calculate the legacy non-witness Transaction ID (txid) for the classic Merkle Tree
+	// CRITICAL FIX: To prevent "Bad Merkle Root" errors, we strip the 34-byte SegWit witness stack sequence 
+	// appended at the tail end of the raw coinbase byte array before extracting the legacy hash.
+	coinbaseLegacyBytes := coinbase
+	if len(coinbase) > 34 {
+		coinbaseLegacyBytes = coinbase[:len(coinbase)-34]
+	}
+	coinbaseTxID := jobs.CoinbaseTxID(coinbaseLegacyBytes)
+
+	// 2.2 Compute the classic Merkle Root matching the block execution framework
 	merkleRoot, err := jobs.BuildMerkleRoot(
-		coinbaseHash,
+		coinbaseTxID,
 		job.BlockTemplate,
 	)
 	if err != nil {
 		return err
 	}
 
-	// CRITICAL FIX REQUIRED: In Stratum, the reconstructed elements must be handled with precise endianness mapping
+	// =========================================================================
+	// STEP 3: BLOCK HEADER RECONSTRUCTION (ENDIANNESS CONVERSIONS)
+	// =========================================================================
+
 	reverseBytes(merkleRoot)
 
 	prevHash, err := hex.DecodeString(

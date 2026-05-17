@@ -36,6 +36,8 @@ type BlockTemplate struct {
 	CoinbaseValue            uint64   `json:"coinbasevalue"`              // Total block reward (subsidy + transaction fees) in satoshis
 	DefaultWitnessCommitment string   `json:"default_witness_commitment"` // SegWit commitment hash inserted in the coinbase transaction
 
+	PoolAddress string
+
 	Transactions []TxData `json:"transactions"` // List of transactions included in the template
 }
 
@@ -65,4 +67,9 @@ type Job struct {
 type Miner struct {
 	Conn        net.Conn // TCP network connection to the miner
 	ExtraNonce1 string   // Unique hex string assigned by the pool to prevent hash collisions between miners
+}
+
+type Session struct {
+	Miner       *Miner
+	ExtraNonce1 string
 }

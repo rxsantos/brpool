@@ -31,7 +31,9 @@ func refreshJob(
 	if err != nil {
 		return err
 	}
-
+	var cfg types.Config
+	
+	tmpl.PoolAddress = cfg.PoolAddress
 	// Build the mining job skeleton from the newly fetched template
 	job := jobs.CreateJob(tmpl)
 

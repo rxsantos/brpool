@@ -33,7 +33,7 @@ func HandleConnection(
 
 	reader := bufio.NewReader(conn)
 
-	extraNonce1 := "00000001"
+	extraNonce1 := NextExtraNonce1()
 
 	for {
 		line, err := reader.ReadBytes('\n')

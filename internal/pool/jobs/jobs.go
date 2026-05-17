@@ -170,6 +170,13 @@ func CreateJob(
 	tmpl *types.BlockTemplate,
 ) *types.Job {
 
+	branches, err := BuildMerkleBranches(
+	tmpl,
+	)
+	if err != nil {
+		panic(err)
+	}
+
 	return &types.Job{
 		JobID: RandomJobID(),
 
@@ -188,5 +195,7 @@ func CreateJob(
 		CleanJobs: true,
 
 		BlockTemplate: tmpl,
+		
+		MerkleBranches: branches,
 	}
 }
