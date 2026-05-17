@@ -72,7 +72,8 @@ func ValidateShare(
 	extraNonce1 := "00000001"
 
 	// Rebuild the customized coinbase transaction using the miner's submitted extraNonce2
-	coinbase, err := jobs.BuildCoinbase(
+	// coinbase, err := jobs.BuildCoinbase(
+	coinbase, err := jobs.BuildCoinbaseTx(
 		job.BlockTemplate,
 		extraNonce1,
 		extraNonce2,
@@ -81,7 +82,10 @@ func ValidateShare(
 		return err
 	}
 
-	coinbaseHash := doubleSHA(coinbase)
+	// coinbaseHash := doubleSHA(coinbase)
+	coinbaseHash := jobs.CoinbaseTxID(
+		coinbase,
+	)
 
 	// Recalculate the Merkle Root with the new coinbase hash injected as the first leaf
 	merkleRoot, err := jobs.BuildMerkleRoot(
@@ -178,11 +182,13 @@ func ValidateShare(
 	// Build raw block payload: [80-byte header] + [tx_count varint] + [coinbase tx] + [mempool txs]
 	block = append(block, header...)
 
-	// CRITICAL FIX REQUIRED: CompactSize/VarInt formatting required for tx count instead of a raw single byte
-	txCount := make([]byte, 1)
-	txCount[0] = byte(len(txs) + 1)
+	// CRITICAL FIXED: CompactSize/VarInt formatting required for tx count instead of a raw single byte
+	// txCount := make([]byte, 1)
+	// txCount[0] = byte(len(txs) + 1)
 
-	block = append(block, txCount...)
+	// block = append(block, txCount...)
+	txCountBytes := jobs.VarInt(uint64(len(txs) + 1)) 
+	block = append(block, txCountBytes...)
 
 	block = append(block, coinbase...)
 
