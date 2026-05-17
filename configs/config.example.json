@@ -1,0 +1,8 @@
+{
+  "rpc_host": "127.0.0.1",
+  "rpc_port": 8332,
+  "rpc_user": "bitcoin", // user Bitcoin Core
+  "rpc_pass": "bitcoin", // pass Bitcoin Core
+  "pool_address": "bc1qgrm626h3tpk7nr04l9kpc9xhc7lxqjc2ymytjt", 
+  "stratum_port": 3333
+}
